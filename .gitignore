@@ -1,2 +1,5 @@
 /Manifest.toml
 /docs/build/
+
+_.code-workspace
+regLocalRegistry.jl
