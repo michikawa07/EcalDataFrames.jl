@@ -2,6 +2,8 @@ module EvalDataFrames
 
 using DataFrames
 
+export eval!
+
 """
 	Unitfulパッケージによって提供される単位付き数値を
 	DataFrame+CSVで保存・読み込みすることを念頭に作成したもの
