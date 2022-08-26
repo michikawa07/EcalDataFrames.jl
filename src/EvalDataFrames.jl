@@ -27,3 +27,8 @@ eval!(df::DataFrame, syms...) = eval!(df, collect(syms))
 eval!(df::DataFrame) = eval!(df, propertynames(df))
 
 end
+
+#=
+
+
+=#
