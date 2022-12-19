@@ -102,3 +102,35 @@ end
         D = [:(1+2), :(sin(0))],
     )
 end
+
+@testset "expr" begin
+    df = DataFrame(
+        A = ["1+2", "1(N/s*kg^2)"],
+        B = [:(1+2), :(1u"N")],
+        C = ["1+2", "1u\"N\""],
+        D = ["[1+2][1]", "[sqrt(1m)]"],
+    ) 
+
+    df |> display
+
+    df_ = deepcopy(df)
+    eval!(df_,:A, parser=uparse)
+    eval!(df_,:B, :C)
+    @test df_ == DataFrame(
+        A = [3, 1u"N/s*kg^2"],
+        B = [3, 1u"N"],
+        C = [3, 1u"N"],
+        D = ["[1+2][1]", "[sqrt(1m)]"],
+    )
+
+    df_ = deepcopy(df)
+    eval!(df_; mod=Unitful)
+    @test df_ == DataFrame(
+        A = [3, 1u"N/s*kg^2"],
+        B = [3, 1u"N"],
+        C = [3, 1u"N"],
+        D = [3, [1u"m^(1/2)"]],
+    )
+
+    df_.D[2][1] |> display
+end
