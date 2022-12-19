@@ -5,16 +5,18 @@ using DataFrames
 export eval!
 
 """
-	Unitfulパッケージによって提供される単位付き数値を
-	DataFrame+CSVで保存・読み込みすることを念頭に作成したもの
-	DataFrameの指定したカラムの文字列をjuliaの構文で評価する．
+	eval!(df::DataFrame, syms::AbstractArray; parser=Meta.parse, mod=Main)
+
+Unitfulパッケージによって提供される単位付き数値を
+DataFrame+CSVで保存・読み込みすることを念頭に作成したもの
+DataFrameの指定したカラムの文字列をjuliaの構文で評価する．
 """
-function eval!(df::DataFrame, syms::AbstractArray;)
+function eval!(df::DataFrame, syms::AbstractArray; parser=Meta.parse, mod=Main)
 	for sym in syms
 		type=eltype(df[!, sym])
 		try
-			type <: AbstractString && (df[!,sym] = df[!, sym] .|> Meta.parse .|> Main.eval)
-			type <: Expr && (df[!,sym] = df[!, sym] .|> Main.eval)
+			type <: AbstractString && (df[!,sym] = df[!, sym] .|> parser .|> mod.eval)
+			type <: Expr && (df[!,sym] = df[!, sym] .|> mod.eval)
 		catch error;
 			type <: AbstractString && @warn "following string in the colmun '$sym' cannot be parse" error _file="line"
 			type <: AbstractString || @warn "the colmun '$sym' cannot be parse, because the type is $type" _file="line"
@@ -22,13 +24,8 @@ function eval!(df::DataFrame, syms::AbstractArray;)
 	end
 	df
 end
-eval!(df::DataFrame, syms_inv::InvertedIndex) = eval!(df, propertynames(df[!,syms_inv]))
-eval!(df::DataFrame, syms...) = eval!(df, collect(syms))
-eval!(df::DataFrame) = eval!(df, propertynames(df))
+eval!(df::DataFrame, syms_inv::InvertedIndex; karg...) = eval!(df, propertynames(df[!,syms_inv]); karg...)
+eval!(df::DataFrame, syms...; karg...) = eval!(df, collect(syms); karg...)
+eval!(df::DataFrame; karg...) = eval!(df, propertynames(df); karg...)
 
 end
-
-#=
-
-
-=#
