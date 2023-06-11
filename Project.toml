@@ -1,7 +1,7 @@
 name = "EvalDataFrames"
 uuid = "7cae038d-4172-4cab-bf85-3ec739f8a1e2"
 authors = ["michikawa07 <michikawa.ryohei@gmail.com> and contributors"]
-version = "0.1.2"
+version = "0.1.3"
 
 [deps]
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"

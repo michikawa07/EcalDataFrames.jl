@@ -26,5 +26,6 @@ end
 eval!(df::DataFrame, syms_inv::InvertedIndex; karg...) = eval!(df, propertynames(df[!,syms_inv]); karg...)
 eval!(df::DataFrame, syms...                ; karg...) = eval!(df, collect(syms)                ; karg...)
 eval!(df::DataFrame                         ; karg...) = eval!(df, propertynames(df)            ; karg...)
+eval!(arg...; karg...) = df::DataFrame -> eval!(df, arg...; karg...)
 
 end

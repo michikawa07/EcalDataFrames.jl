@@ -134,3 +134,24 @@ end
 
     df_.D[2][1] |> display
 end
+
+@testset "pipe and lambda" begin
+	df = DataFrame(
+		A = ["1+2", "1(N/s*kg^2)"],
+		B = [:(1+2), :(1u"N")],
+		C = ["1+2", "1u\"N\""],
+		D = ["[1+2][1]", "[sqrt(1m)]"],
+  ) 
+
+  df |> display
+
+  df_ = deepcopy(df)
+  df_ |> eval!(:A, parser=uparse) |> eval!(:B, :C) |> eval!(mod=Unitful)
+  @test df_ == DataFrame(
+		A = [3, 1u"N/s*kg^2"],
+		B = [3, 1u"N"],
+		C = [3, 1u"N"],
+		D = [3, [sqrt(1u"m")]],
+  )
+
+end
