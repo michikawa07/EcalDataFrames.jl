@@ -4,21 +4,28 @@ using DataFrames
 
 export eval!
 
+
 """
 	eval!(df::DataFrame, syms::AbstractArray; parser=Meta.parse, mod=Main)
 	eval!(df::DataFrame, syms::InvertedIndex; parser=Meta.parse, mod=Main)
 	eval!(df::DataFrame, syms...            ; parser=Meta.parse, mod=Main)
 	eval!(df::DataFrame                     ; parser=Meta.parse, mod=Main)
+
+文字列を`parser`メソッドでパースし，`mod`モジュールの`eval`メソッドで評価します．
 """
 function eval!(df::DataFrame, syms::AbstractArray; parser=Meta.parse, mod=Main)
+	parse_skipmissing(x) = ismissing(x) ? x : parser(x)
+	StringMissing = Union{Missing, AbstractString}
+	ExprMissing   = Union{Missing, Expr}
 	for sym in syms
-		type=eltype(df[!, sym])
+		T = eltype(df[!, sym])
 		try
-			type <: AbstractString && (@. df[!,sym] = df[!, sym] |> parser |> mod.eval)
-			type <: Expr           && (@. df[!,sym] = df[!, sym] |> mod.eval)
-		catch error;
-			type <: AbstractString && @warn "following string in the colmun '$sym' cannot be parse" error _file="line"
-			type <: AbstractString || @warn "the colmun '$sym' cannot be parse, because the type is $type" _file="line"
+			T <: StringMissing && @. df[!,sym] = df[!, sym] |> parse_skipmissing |> mod.eval
+			T <: ExprMissing   && @. df[!,sym] = df[!, sym] |> mod.eval
+			T <: Union{StringMissing, ExprMissing} || @warn "the colmun '$sym' (type $T) cannot be parse" _file="line"
+		catch e
+			T <: StringMissing && @warn "following string in the colmun '$sym' cannot be parse" e _file="line"
+			T <: StringMissing || @warn "the colmun '$sym' cannot be parse, because the type is $T" e _file="line"
 		end
 	end
 	df
