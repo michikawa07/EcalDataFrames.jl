@@ -22,6 +22,7 @@ function eval!(df::DataFrame, syms::AbstractArray; parser=Meta.parse, mod=Main)
 		try
 			T <: StringMissing && @. df[!,sym] = df[!, sym] |> parse_skipmissing |> mod.eval
 			T <: ExprMissing   && @. df[!,sym] = df[!, sym] |> mod.eval
+			T <: Number        && continue
 			T <: Union{StringMissing, ExprMissing} || @warn "the colmun '$sym' (type $T) cannot be parse" _file="line"
 		catch e
 			T <: StringMissing && @warn "following string in the colmun '$sym' cannot be parse" e _file="line"
