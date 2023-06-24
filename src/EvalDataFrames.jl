@@ -17,12 +17,13 @@ function eval!(df::DataFrame, syms::AbstractArray; parser=Meta.parse, mod=Main)
 	parse_skipmissing(x) = ismissing(x) ? x : parser(x)
 	StringMissing = Union{Missing, AbstractString}
 	ExprMissing   = Union{Missing, Expr}
+	NumberMissing = Union{Missing, Number}
 	for sym in syms
 		T = eltype(df[!, sym])
 		try
 			T <: StringMissing && @. df[!,sym] = df[!, sym] |> parse_skipmissing |> mod.eval
 			T <: ExprMissing   && @. df[!,sym] = df[!, sym] |> mod.eval
-			T <: Number        && continue
+			T <: NumberMissing && continue
 			T <: Union{StringMissing, ExprMissing} || @warn "the colmun '$sym' (type $T) cannot be parse" _file="line"
 		catch e
 			T <: StringMissing && @warn "following string in the colmun '$sym' cannot be parse" e _file="line"
