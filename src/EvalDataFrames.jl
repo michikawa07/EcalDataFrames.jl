@@ -14,27 +14,53 @@ export eval!
 文字列を`parser`メソッドでパースし，`mod`モジュールの`eval`メソッドで評価します．
 """
 function eval!(df::DataFrame, syms::AbstractArray; parser=Meta.parse, mod=Main)
-	parse_skipmissing(x) = ismissing(x) ? x : parser(x)
-	StringMissing = Union{Missing, AbstractString}
-	ExprMissing   = Union{Missing, Expr}
-	NumberMissing = Union{Missing, Number}
 	for sym in syms
-		T = eltype(df[!, sym])
 		try
-			T <: StringMissing && @. df[!,sym] = df[!, sym] |> parse_skipmissing |> mod.eval
-			T <: ExprMissing   && @. df[!,sym] = df[!, sym] |> mod.eval
-			T <: NumberMissing && continue
-			T <: Union{StringMissing, ExprMissing} || @warn "the colmun '$sym' (type $T) cannot be parse" _file="line"
-		catch e
-			T <: StringMissing && @warn "following string in the colmun '$sym' cannot be parse" e _file="line"
-			T <: StringMissing || @warn "the colmun '$sym' cannot be parse, because the type is $T" e _file="line"
+			df[!,sym] .= df[!, sym] .|> tryeval(parser, mod)
+		catch err
+			err isa Union{EltypeError, ParseError, EvalError} || throw(err)
+			@warn "The colmun '$sym'(::$(eltype(df[!, sym]))) cannot be parse" err _file="line"
 		end
 	end
-	df
+	return df
 end
 eval!(df::DataFrame, syms_inv::InvertedIndex; karg...) = eval!(df, propertynames(df[!,syms_inv]); karg...)
 eval!(df::DataFrame, syms...                ; karg...) = eval!(df, collect(syms)                ; karg...)
 eval!(df::DataFrame                         ; karg...) = eval!(df, propertynames(df)            ; karg...)
 eval!(arg...; karg...) = df::DataFrame -> eval!(df, arg...; karg...)
+
+"""
+	tryeval(x, parser, mod)
+
+各要素の評価を試みる
+"""
+tryeval(parser, mod) = x -> tryeval(x, parser, mod)
+tryeval(x::AbstractString, parser, mod) = try parser(x) catch e; throw(ParseError(x,e)) end |> tryeval(parser, mod) 
+tryeval(x::Expr,           parser, mod) = try mod.eval(x) catch e; throw(EvalError(x,e)) end
+tryeval(x::Number,         parser, mod) = x                
+tryeval( ::Missing,        parser, mod) = missing
+tryeval( ::Nothing,        parser, mod) = nothing
+tryeval( ::T,              parser, mod) where T = throw(EltypeError{T}())
+
+struct EltypeError{T} <: Exception end
+Base.showerror(io::IO, e::EltypeError{T}) where T =
+    print(io, "EltypeError: `tryeval(x::$T, parser, mod)` is not defined");
+
+struct ParseError <:Exception
+	 x
+	 e::Exception
+end
+Base.showerror(io::IO, e::ParseError) = begin
+    println(io, "ParseError: Following error is occured parsing `$(e.x)`")
+	 showerror(io, e.e)
+end
+struct EvalError <:Exception
+	x
+	e::Exception
+end
+Base.showerror(io::IO, e::EvalError) = begin
+	println(io, "EvalError: Following error is occured evaluating `$(e.x)`")
+	showerror(io, e.e)
+end
 
 end

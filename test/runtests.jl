@@ -4,13 +4,18 @@ using DataFrames, Unitful
 
 @testset "EvalDataFrames.eval!" begin
     df = DataFrame(A = ["1","2","3"]) |> eval!
-    @test df.A == [1,2,3]
+    @test df.A |> isequal( [1,2,3] )
 
     df = DataFrame(A = ["[1,2,3]","[2,4]"]) |> eval!
-    @test df.A == [[1,2,3],[2,4]]
+    @test df.A |> isequal( [[1,2,3],[2,4]] )
 
     df = DataFrame(A = ["1+2","sqrt(2)"]) |> eval!
-    @test df.A == [3,sqrt(2)]
+    @test df.A |> isequal( [3,sqrt(2)] ) 
+
+	 df = DataFrame(A = [1,"sqrt(2)", missing]) |> eval!
+    @test df.A |> isequal( [1,sqrt(2),missing] )
+
+	 df |> display
 end
 
 @testset "EvalDataFrames.eval! + Unitful" begin
@@ -25,12 +30,12 @@ end
         C = [1,2],
         D = [:(1+2), :(sin(0))],
     ) |> eval!
-    @test df == DataFrame(
+    @test df |> isequal(DataFrame(
         A = [1u"m",2],
         B = [[1u"m",2u"m",3u"m"],[2u"m",4u"m"]],
         C = [1,2],
         D = [3, sin(0)],
-    )
+    ))
 end
 
 @testset "EvalDataFrames.eval! multi colmun" begin
@@ -44,63 +49,63 @@ end
     #* パイプラインの確認
     df_ = deepcopy(df)
     df_ |> eval!
-    @test df_ == DataFrame(
+    @test df_ |> isequal( DataFrame(
         A = [1,2],
         B = [[1,2,3],[2,4]],
         C = [1,2],
         D = [3, sin(0)],
-    )
+    ))
   
     #* カラムの指定
     df_ = deepcopy(df)
     eval!(df_, :B)
-    @test df_ == DataFrame(
+    @test df_ |> isequal( DataFrame(
         A = ["1","2"],
         B = [[1,2,3],[2,4]],
         C = [1,2],
         D = [:(1+2), :(sin(0))],
-    )
+    ))
     
 
     #* 複数カラムの指定
     df_ = deepcopy(df)
     eval!(df_, [:A, :D])
-    @test df_ == DataFrame(
+    @test df_ |> isequal( DataFrame(
         A = [1,2],
         B = ["[1,2,3]","[2,4]"],
         C = [1,2],
         D = [3, sin(0)],
-    )
+    ))
         
     #* カラムの除外
     df_ = deepcopy(df)
     eval!(df_, Not(:A))
-    @test df_ == DataFrame(
+    @test df_ |> isequal( DataFrame(
         A = ["1","2"],
         B = [[1,2,3],[2,4]],
         C = [1,2],
         D = [3, sin(0)],
-    )
+    ))
     
     #* 複数カラムの除外
     df_ = deepcopy(df)
     eval!(df_, Not([:A, :C]))
-    @test df_ == DataFrame(
+    @test df_ |> isequal( DataFrame(
         A = ["1","2"],
         B = [[1,2,3],[2,4]],
         C = [1,2],
         D = [3, sin(0)],
-    )
+    ))
     
     #* 全カラムの除外
     df_ = deepcopy(df)
     eval!(df_, Not(df_|>propertynames))
-    @test df_ == DataFrame(
+    @test df_ |> isequal( DataFrame(
         A = ["1","2"],
         B = ["[1,2,3]","[2,4]"],
         C = [1,2],
         D = [:(1+2), :(sin(0))],
-    )
+    ))
 end
 
 @testset "expr" begin
@@ -154,4 +159,17 @@ end
 		D = [3, [sqrt(1u"m")]],
   )
 
+end
+
+@testset "occur warning" begin
+	df = DataFrame(
+		A = [[3,4], [1,2]],
+  ) 
+
+  df |> display
+
+  #* ベクトルは弾く
+  df_ = deepcopy(df)
+  df_ |> eval!
+  @test df_ |> isequal( df )
 end
