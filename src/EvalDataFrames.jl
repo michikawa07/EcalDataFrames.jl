@@ -35,9 +35,10 @@ eval!(arg...; karg...) = df::DataFrame -> eval!(df, arg...; karg...)
 各要素の評価を試みる
 """
 tryeval(parser, mod) = x -> tryeval(x, parser, mod)
-tryeval(x::AbstractString, parser, mod) = try parser(x) catch e; throw(ParseError(x,e)) end |> tryeval(parser, mod) 
+tryeval(x::AbstractString, parser, mod) = try parser(x)   catch e; throw(ParseError(x,e)) end |> tryeval(parser, mod) 
 tryeval(x::Expr,           parser, mod) = try mod.eval(x) catch e; throw(EvalError(x,e)) end
-tryeval(x::Number,         parser, mod) = x                
+tryeval(x::QuoteNode,      parser, mod) = try mod.eval(x) catch e; throw(EvalError(x,e)) end
+tryeval(x::Number,         parser, mod) = x
 tryeval( ::Missing,        parser, mod) = missing
 tryeval( ::Nothing,        parser, mod) = nothing
 tryeval( ::T,              parser, mod) where T = throw(EltypeError{T}())

@@ -114,6 +114,7 @@ end
         B = [:(1+2), :(1u"N")],
         C = ["1+2", "1u\"N\""],
         D = ["[1+2][1]", "[sqrt(1m)]"],
+        E = [":test", ":sample"],
     ) 
 
     df |> display
@@ -126,6 +127,7 @@ end
         B = [3, 1u"N"],
         C = [3, 1u"N"],
         D = ["[1+2][1]", "[sqrt(1m)]"],
+        E = [":test", ":sample"],
     )
 
     df_ = deepcopy(df)
@@ -135,7 +137,9 @@ end
         B = [3, 1u"N"],
         C = [3, 1u"N"],
         D = [3, [1u"m^(1/2)"]],
+		  E = [:test, :sample],
     )
+
 
     df_.D[2][1] |> display
 end
@@ -170,6 +174,5 @@ end
 
   #* ベクトルは弾く
   df_ = deepcopy(df)
-  df_ |> eval!
   @test df_ |> isequal( df )
 end
